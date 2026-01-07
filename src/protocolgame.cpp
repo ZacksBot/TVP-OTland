@@ -30,7 +30,7 @@ namespace {
 using WaitList = std::deque<std::pair<int64_t, uint32_t>>; // (timeout, player guid)
 
 struct ClientSearchResult {
-	WaitList* list;
+	WaitList& list;
 	WaitList::iterator it;
 	WaitList::size_type slot;
 };
@@ -43,17 +43,17 @@ ClientSearchResult findClient(const Player& player) {
 
 	for (auto it = priorityWaitList.begin(); it != priorityWaitList.end(); ++it, ++slot) {
 		if (it->second == playerGuid) {
-			return {&priorityWaitList, it, slot};
+			return {priorityWaitList, it, slot};
 		}
 	}
 
 	for (auto it = waitList.begin(); it != waitList.end(); ++it, ++slot) {
 		if (it->second == playerGuid) {
-			return {&waitList, it, slot};
+			return {waitList, it, slot};
 		}
 	}
 
-	return {&waitList, waitList.end(), slot - 1};
+	return {waitList, waitList.end(), slot - 1};
 }
 
 uint8_t getWaitTime(std::size_t slot)
@@ -106,11 +106,11 @@ std::size_t clientLogin(const Player& player)
 		return 0;
 	}
 
-	const auto [list, it, existingSlot] = findClient(player);
-	if (it != list->end()) {
+	auto [list, it, existingSlot] = findClient(player);
+	if (it != list.end()) {
 		// If server has capacity for this client, let him in even though his current slot might be higher than 0.
 		if ((g_game.getPlayersOnline() + existingSlot) <= maxPlayers) {
-			list->erase(it);
+			list.erase(it);
 			return 0;
 		}
 
